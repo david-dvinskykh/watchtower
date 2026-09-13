@@ -1,0 +1,52 @@
+# Multi-arch image for this fork, published to GHCR as
+# ghcr.io/<owner>/watchtower by .github/workflows/ghcr.yml.
+#
+# Unlike dockerfiles/Dockerfile (which expects a binary produced by goreleaser
+# in the build context) this one builds the binary itself, so `docker buildx
+# build --platform linux/amd64,linux/arm64` is all that is needed.
+#
+# The build stage stays on the *build* platform and cross-compiles through
+# GOARCH: Go does that natively in seconds, while emulating an arm64 toolchain
+# under QEMU takes minutes.
+
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS builder
+
+ARG TARGETOS=linux
+ARG TARGETARCH
+# Ends up in `watchtower --version` and in the HTTP user agent.
+ARG WATCHTOWER_VERSION=v0.0.0-unknown
+
+WORKDIR /src
+
+# Dependencies first: they only change when go.mod/go.sum do, so the layer
+# survives ordinary source edits.
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -trimpath \
+      -ldflags "-s -w -X github.com/containrrr/watchtower/internal/meta.Version=${WATCHTOWER_VERSION}" \
+      -o /out/watchtower .
+
+FROM --platform=$BUILDPLATFORM alpine:3.21 AS certs
+
+RUN apk add --no-cache ca-certificates tzdata
+
+FROM scratch
+
+# Watchtower looks for this label to recognise itself and stay the last
+# container it restarts. Without it self-update breaks.
+LABEL "com.centurylinklabs.watchtower"="true"
+
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=certs /usr/share/zoneinfo /usr/share/zoneinfo
+
+EXPOSE 8080
+
+COPY --from=builder /out/watchtower /watchtower
+
+HEALTHCHECK CMD [ "/watchtower", "--health-check" ]
+
+ENTRYPOINT ["/watchtower"]

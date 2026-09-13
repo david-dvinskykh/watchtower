@@ -1,6 +1,21 @@
 <div align="center">
 
-  ### ⚠️ This project is no longer maintained
+  ### Fork notice
+
+  This is a fork of [containrrr/watchtower](https://github.com/containrrr/watchtower),
+  kept for the container stacks running on a home Raspberry Pi.
+
+  Its image is published to `ghcr.io/david-dvinskykh/watchtower` for linux/amd64 and
+  linux/arm64 by [`.github/workflows/ghcr.yml`](.github/workflows/ghcr.yml) on every
+  push to `main` (built from [`dockerfiles/Dockerfile.ghcr`](dockerfiles/Dockerfile.ghcr)).
+  Pushing to `main` is what rolls the stacks forward — watchtower updates itself.
+
+  Upstream is archived, so security fixes have to be carried here: bump the Go
+  dependencies and push, the build does the rest.
+
+  ---
+
+  ### ⚠️ Upstream is no longer maintained
   See https://github.com/containrrr/watchtower/discussions/2135 for details.
 
   ---
