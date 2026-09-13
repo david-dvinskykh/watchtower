@@ -1,10 +1,19 @@
 # Builds this fork and publishes it to GitHub Container Registry as
-# ghcr.io/<owner>/watchtower (linux/amd64 + linux/arm64).
+# ghcr.io/<owner>/container-updater (linux/amd64 + linux/arm64).
 #
 # Why this exists: the stacks on the Pi (family-medcard, megamcp) used to run
 # a third-party watchtower image. They now run the image built here, so the
 # code that has root-equivalent access to the docker socket is the code in
 # this repository.
+#
+# Why the image is NOT called "watchtower": the same host runs Home Assistant,
+# and its Supervisor marks the whole system unhealthy (unhealthy_system_docker,
+# which blocks add-on installs and Core/OS updates) when any container on the
+# daemon runs an image whose last path segment starts with watchtower,
+# ouroboros or portainer. See UNHEALTHY_IMAGES in the Supervisor source,
+# supervisor/resolution/evaluations/container.py — it matches on the image
+# name, not the container name, and no label or scope avoids it. So the image
+# name must stay off that list; do not "fix" it back to watchtower.
 #
 # Tags published:
 #   latest          — every push to the default branch
@@ -24,7 +33,9 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # Deliberately not ${{ github.repository }}: that would publish
+  # .../watchtower, which trips the Home Assistant Supervisor denylist above.
+  IMAGE_NAME: ${{ github.repository_owner }}/container-updater
 
 concurrency:
   group: ghcr-${{ github.ref }}
@@ -82,8 +93,8 @@ jobs:
             type=semver,pattern={{major}}
             type=sha,format=short
           labels: |
-            org.opencontainers.image.title=Watchtower (fork)
-            org.opencontainers.image.description=Automated Docker container base image updates, built from this fork
+            org.opencontainers.image.title=Container updater (watchtower fork)
+            org.opencontainers.image.description=Automated Docker container base image updates, built from this watchtower fork
 
       - name: Build and push
         id: build

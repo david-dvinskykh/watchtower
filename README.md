@@ -5,10 +5,17 @@
   This is a fork of [containrrr/watchtower](https://github.com/containrrr/watchtower),
   kept for the container stacks running on a home Raspberry Pi.
 
-  Its image is published to `ghcr.io/david-dvinskykh/watchtower` for linux/amd64 and
-  linux/arm64 by [`.github/workflows/ghcr.yml`](.github/workflows/ghcr.yml) on every
-  push to `main` (built from [`dockerfiles/Dockerfile.ghcr`](dockerfiles/Dockerfile.ghcr)).
+  Its image is published to `ghcr.io/david-dvinskykh/container-updater` for
+  linux/amd64 and linux/arm64 by [`.github/workflows/ghcr.yml`](.github/workflows/ghcr.yml)
+  on every push to `main` (built from [`dockerfiles/Dockerfile.ghcr`](dockerfiles/Dockerfile.ghcr)).
   Pushing to `main` is what rolls the stacks forward — watchtower updates itself.
+
+  The image is deliberately **not** named `watchtower`: the same host runs Home
+  Assistant, whose Supervisor marks the system unhealthy (blocking add-on
+  installs and Core/OS updates) whenever a container on the daemon runs an image
+  whose last path segment starts with `watchtower`, `ouroboros` or `portainer`
+  (`UNHEALTHY_IMAGES` in `supervisor/resolution/evaluations/container.py`; it
+  matches the image name, not the container name).
 
   Upstream is archived, so security fixes have to be carried here: bump the Go
   dependencies and push, the build does the rest.
