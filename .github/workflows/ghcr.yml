@@ -143,6 +143,21 @@ jobs:
           grep -q "linux/arm64" /tmp/platforms.txt
           grep -q "linux/amd64" /tmp/platforms.txt
 
+          # Talk to a real daemon. --help proves the binary runs; only this
+          # proves it can actually work. The archived upstream pinned the
+          # docker client to API 1.25, and every modern daemon rejects that
+          # with "client version 1.25 is too old" — the container then
+          # crash-loops, which no static check catches.
+          #
+          # The scope matches no container on the runner, so this scans and
+          # exits without touching anything; --cleanup is deliberately absent.
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock "$IMAGE" \
+            --run-once --label-enable --scope=ci-smoke-no-such-scope \
+            > /tmp/runonce.out 2>&1 || { cat /tmp/runonce.out; exit 1; }
+          cat /tmp/runonce.out
+          ! grep -qi "too old" /tmp/runonce.out
+          ! grep -qi "level=error" /tmp/runonce.out
+
       - name: Summary
         run: |
           {
